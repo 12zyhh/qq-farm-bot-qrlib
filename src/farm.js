@@ -7,7 +7,7 @@ const { CONFIG, PlantPhase, PHASE_NAMES } = require('./config');
 const { types } = require('./proto');
 const { sendMsgAsync, getUserState, networkEvents } = require('./network');
 const { toLong, toNum, getServerTimeSec, toTimeSec, log, logWarn, sleep } = require('./utils');
-const { getPlantNameBySeedId, getPlantName, getPlantExp, formatGrowTime, getPlantGrowTime } = require('./gameConfig');
+const { getPlantNameBySeedId, getPlantName, getPlantExp, formatGrowTime, getPlantGrowTime, getPlantBySeedId } = require('./gameConfig');
 
 // ============ 内部状态 ============
 let isCheckingFarm = false;
@@ -211,15 +211,28 @@ async function findBestSeed() {
         return null;
     }
 
-    // 按等级要求排序
     // 如果外部指定了种子ID，优先使用
     if (overrideSeedId > 0) {
         const specified = available.find(a => a.seedId === overrideSeedId);
         if (specified) return specified;
     }
-    // 取最高等级种子: available.sort((a, b) => b.requiredLevel - a.requiredLevel);
-    // 暂时改为取最低等级种子 (白萝卜)
-    available.sort((a, b) => a.requiredLevel - b.requiredLevel);
+
+    // 按经验效率（exp/hour）排序，选最优种子
+    const FERTILIZER_SPEED = 30;
+    const OPERATION_TIME = 15;
+    available.sort((a, b) => {
+        const plantA = getPlantBySeedId(a.seedId);
+        const plantB = getPlantBySeedId(b.seedId);
+        const growA = plantA ? getPlantGrowTime(plantA.id) : 0;
+        const growB = plantB ? getPlantGrowTime(plantB.id) : 0;
+        const expA = plantA ? (plantA.exp || 0) + 1 : 0;
+        const expB = plantB ? (plantB.exp || 0) + 1 : 0;
+        const cycleA = Math.max(growA - FERTILIZER_SPEED, 1) + OPERATION_TIME;
+        const cycleB = Math.max(growB - FERTILIZER_SPEED, 1) + OPERATION_TIME;
+        const effA = cycleA > 0 ? expA / cycleA : 0;
+        const effB = cycleB > 0 ? expB / cycleB : 0;
+        return effB - effA;
+    });
     return available[0];
 }
 
