@@ -158,6 +158,7 @@ function handleNotify(msg) {
                 const notify = types.KickoutNotify.decode(eventBody);
                 log('推送', `原因: ${notify.reason_message || '未知'}`);
             } catch (e) { }
+            networkEvents.emit('kicked');
             return;
         }
 

@@ -48,6 +48,19 @@ async function init() {
     botEvents.emit('log', entry);
   });
 
+  // 监听被踢下线事件，自动断开清理
+  networkEvents.on('kicked', () => {
+    stopFarmCheckLoop();
+    stopFriendCheckLoop();
+    cleanupTaskSystem();
+    stopSellLoop();
+    cleanupStatusBar();
+    resetState();
+    isConnected = false;
+    isConnecting = false;
+    botEvents.emit('status-update', { connected: false });
+  });
+
   // 应用保存的配置
   const config = store.get();
   CONFIG.farmCheckInterval = Math.max(config.farmInterval, 1) * 1000;
