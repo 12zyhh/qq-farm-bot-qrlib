@@ -10,7 +10,7 @@ const EventEmitter = require('events');
 const { CONFIG } = require('../src/config');
 const { loadProto } = require('../src/proto');
 const { connect, cleanup, resetState, getWs, getUserState, networkEvents } = require('../src/network');
-const { startFarmCheckLoop, stopFarmCheckLoop, setOverrideSeedId } = require('../src/farm');
+const { startFarmCheckLoop, stopFarmCheckLoop, setOverrideSeedId, setPlantStrategy, getShopCache, clearShopCache } = require('../src/farm');
 const { startFriendCheckLoop, stopFriendCheckLoop } = require('../src/friend');
 const { initTaskSystem, cleanupTaskSystem } = require('../src/task');
 const { initStatusBar, cleanupStatusBar, setStatusPlatform, statusData, setElectronMode } = require('../src/status');
@@ -55,6 +55,7 @@ async function init() {
     cleanupTaskSystem();
     stopSellLoop();
     cleanupStatusBar();
+    clearShopCache();
     resetState();
     isConnected = false;
     isConnecting = false;
@@ -68,6 +69,9 @@ async function init() {
 
   if (config.plantMode === 'manual' && config.plantSeedId > 0) {
     setOverrideSeedId(config.plantSeedId);
+  }
+  if (config.plantMode === 'fast' || config.plantMode === 'advanced') {
+    setPlantStrategy(config.plantMode);
   }
 }
 
@@ -157,6 +161,7 @@ function botDisconnect() {
   cleanupTaskSystem();
   stopSellLoop();
   cleanupStatusBar();
+  clearShopCache();
   resetState();
   isConnected = false;
   isConnecting = false;
@@ -240,6 +245,9 @@ function saveConfig(partial) {
     } else {
       setOverrideSeedId(0);
     }
+    if (config.plantMode === 'fast' || config.plantMode === 'advanced') {
+      setPlantStrategy(config.plantMode);
+    }
   }
 
   return { success: true };
@@ -249,7 +257,11 @@ function saveConfig(partial) {
 function getPlantPlan() {
   const state = getUserState();
   const level = state.level || 1;
-  return calculatePlantPlan(level);
+  const config = store.get();
+  const strategy = config.plantMode === 'manual' ? 'fast' : config.plantMode;
+  const cache = getShopCache();
+  const shopGoodsList = cache ? cache.goodsList : null;
+  return calculatePlantPlan(level, shopGoodsList, strategy);
 }
 
 // ============ 日志 ============

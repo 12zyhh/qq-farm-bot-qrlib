@@ -15,8 +15,14 @@ let isFirstFarmCheck = true;
 let farmCheckTimer = null;
 let farmLoopRunning = false;
 let overrideSeedId = 0;  // 外部指定种子ID（0=自动选择）
+let currentStrategy = 'fast';  // 种植策略: 'fast'(exp/hour) | 'advanced'(单次经验)
+let shopCache = null;  // { goodsList: [...], timestamp: number }
+const SHOP_CACHE_TTL = 300000;  // 商店缓存5分钟
 
 function setOverrideSeedId(seedId) { overrideSeedId = seedId; }
+function setPlantStrategy(strategy) { currentStrategy = strategy; }
+function getShopCache() { return shopCache ? shopCache.goodsList : null; }
+function clearShopCache() { shopCache = null; }
 
 // ============ 农场 API ============
 
@@ -168,42 +174,52 @@ async function plantSeeds(seedId, landIds) {
 
 async function findBestSeed() {
     const SEED_SHOP_ID = 2;
-    const shopReply = await getShopInfo(SEED_SHOP_ID);
-    if (!shopReply.goods_list || shopReply.goods_list.length === 0) {
-        logWarn('商店', '种子商店无商品');
-        return null;
-    }
+    const now = Date.now();
 
-    const state = getUserState();
-    const available = [];
-    for (const goods of shopReply.goods_list) {
-        if (!goods.unlocked) continue;
+    // 查询商店并缓存（5分钟TTL）
+    let available;
+    if (shopCache && (now - shopCache.timestamp) < SHOP_CACHE_TTL) {
+        available = shopCache.goodsList.map(g => ({ ...g }));
+    } else {
+        const shopReply = await getShopInfo(SEED_SHOP_ID);
+        if (!shopReply.goods_list || shopReply.goods_list.length === 0) {
+            logWarn('商店', '种子商店无商品');
+            return null;
+        }
 
-        let meetsConditions = true;
-        let requiredLevel = 0;
-        const conds = goods.conds || [];
-        for (const cond of conds) {
-            if (toNum(cond.type) === 1) {
-                requiredLevel = toNum(cond.param);
-                if (state.level < requiredLevel) {
-                    meetsConditions = false;
-                    break;
+        const state = getUserState();
+        available = [];
+        for (const goods of shopReply.goods_list) {
+            if (!goods.unlocked) continue;
+
+            let meetsConditions = true;
+            let requiredLevel = 0;
+            const conds = goods.conds || [];
+            for (const cond of conds) {
+                if (toNum(cond.type) === 1) {
+                    requiredLevel = toNum(cond.param);
+                    if (state.level < requiredLevel) {
+                        meetsConditions = false;
+                        break;
+                    }
                 }
             }
+            if (!meetsConditions) continue;
+
+            const limitCount = toNum(goods.limit_count);
+            const boughtNum = toNum(goods.bought_num);
+            if (limitCount > 0 && boughtNum >= limitCount) continue;
+
+            available.push({
+                goodsId: toNum(goods.id),
+                seedId: toNum(goods.item_id),
+                price: toNum(goods.price),
+                requiredLevel,
+            });
         }
-        if (!meetsConditions) continue;
 
-        const limitCount = toNum(goods.limit_count);
-        const boughtNum = toNum(goods.bought_num);
-        if (limitCount > 0 && boughtNum >= limitCount) continue;
-
-        available.push({
-            goods,
-            goodsId: toNum(goods.id),
-            seedId: toNum(goods.item_id),
-            price: toNum(goods.price),
-            requiredLevel,
-        });
+        // 缓存商店数据（不含 protobuf 对象）
+        shopCache = { goodsList: available.map(g => ({ ...g })), timestamp: now };
     }
 
     if (available.length === 0) {
@@ -217,25 +233,40 @@ async function findBestSeed() {
         if (specified) return specified;
     }
 
-    // 按经验效率（exp/hour）排序，选最优种子
-    // 只使用 102 开头的正常植物数据计算效率，排除 202 等特殊版本
+    // 根据策略排序
     const FERTILIZER_SPEED = 30;
     const OPERATION_TIME = 15;
-    available.sort((a, b) => {
-        const plantA = getPlantBySeedId(a.seedId);
-        const plantB = getPlantBySeedId(b.seedId);
-        const useA = plantA && String(plantA.id).startsWith('102') ? plantA : null;
-        const useB = plantB && String(plantB.id).startsWith('102') ? plantB : null;
-        const growA = useA ? getPlantGrowTime(useA.id) : 9999;
-        const growB = useB ? getPlantGrowTime(useB.id) : 9999;
-        const expA = useA ? (useA.exp || 0) + 1 : 0;
-        const expB = useB ? (useB.exp || 0) + 1 : 0;
-        const cycleA = Math.max(growA - FERTILIZER_SPEED, 1) + OPERATION_TIME;
-        const cycleB = Math.max(growB - FERTILIZER_SPEED, 1) + OPERATION_TIME;
-        const effA = cycleA > 0 ? expA / cycleA : 0;
-        const effB = cycleB > 0 ? expB / cycleB : 0;
-        return effB - effA;
-    });
+    if (currentStrategy === 'advanced') {
+        // 高级作物：按单次收获经验降序，同经验按价格降序
+        available.sort((a, b) => {
+            const plantA = getPlantBySeedId(a.seedId);
+            const plantB = getPlantBySeedId(b.seedId);
+            const useA = plantA && String(plantA.id).startsWith('102') ? plantA : null;
+            const useB = plantB && String(plantB.id).startsWith('102') ? plantB : null;
+            const expA = useA ? (useA.exp || 0) : 0;
+            const expB = useB ? (useB.exp || 0) : 0;
+            if (expA !== expB) return expB - expA;
+            return b.price - a.price;
+        });
+    } else {
+        // 快速升级：按 exp/hour 排序（含巡田间隔修正）
+        const CHECK_INTERVAL = Math.round(CONFIG.farmCheckInterval / 1000);
+        available.sort((a, b) => {
+            const plantA = getPlantBySeedId(a.seedId);
+            const plantB = getPlantBySeedId(b.seedId);
+            const useA = plantA && String(plantA.id).startsWith('102') ? plantA : null;
+            const useB = plantB && String(plantB.id).startsWith('102') ? plantB : null;
+            const growA = useA ? getPlantGrowTime(useA.id) : 9999;
+            const growB = useB ? getPlantGrowTime(useB.id) : 9999;
+            const expA = useA ? (useA.exp || 0) + 1 : 0;
+            const expB = useB ? (useB.exp || 0) + 1 : 0;
+            const cycleA = Math.max(growA - FERTILIZER_SPEED, 1) + OPERATION_TIME + CHECK_INTERVAL;
+            const cycleB = Math.max(growB - FERTILIZER_SPEED, 1) + OPERATION_TIME + CHECK_INTERVAL;
+            const effA = cycleA > 0 ? expA / cycleA : 0;
+            const effB = cycleB > 0 ? expB / cycleB : 0;
+            return effB - effA;
+        });
+    }
     return available[0];
 }
 
@@ -612,4 +643,7 @@ module.exports = {
     getCurrentPhase,
     setOperationLimitsCallback,
     setOverrideSeedId,
+    setPlantStrategy,
+    getShopCache,
+    clearShopCache,
 };

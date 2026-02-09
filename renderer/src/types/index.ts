@@ -15,7 +15,7 @@ export interface AppConfig {
   platform: 'qq' | 'wx'
   farmInterval: number
   friendInterval: number
-  plantMode: 'auto' | 'manual'
+  plantMode: 'fast' | 'advanced' | 'manual'
   plantSeedId: number
   features: Record<string, boolean>
 }
@@ -32,8 +32,9 @@ export interface PlantOption {
 
 export interface PlantPlanResult {
   currentLevel: number
-  recommended: PlantOption
+  recommended: PlantOption | null
   options: PlantOption[]
+  strategy: 'fast' | 'advanced' | 'manual'
 }
 
 export interface LogEntry {

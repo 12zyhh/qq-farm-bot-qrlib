@@ -13,7 +13,7 @@ const DEFAULT_CONFIG = {
   platform: 'qq',
   farmInterval: 10,
   friendInterval: 1,
-  plantMode: 'auto',
+  plantMode: 'fast',
   plantSeedId: 0,
   features: {
     autoHarvest: true,
@@ -47,6 +47,8 @@ function load() {
         ...saved,
         features: { ...DEFAULT_CONFIG.features, ...(saved.features || {}) },
       };
+      // 兼容旧值 'auto' → 'fast'
+      if (config.plantMode === 'auto') config.plantMode = 'fast';
     } else {
       config = { ...DEFAULT_CONFIG, features: { ...DEFAULT_CONFIG.features } };
     }

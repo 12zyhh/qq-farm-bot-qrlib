@@ -74,19 +74,23 @@
       <div class="section-title">种植策略</div>
       <div class="plant-plan" v-if="plantPlan">
         <div class="plan-info">
-          <span>当前策略: <strong>{{ plantPlan.recommended?.name || '无' }}</strong> (经验最优)</span>
+          <span>推荐作物: <strong>{{ plantPlan.recommended?.name || '无' }}</strong>
+            <el-tag size="small" :type="strategyTagType" class="strategy-tag">{{ strategyLabel }}</el-tag>
+          </span>
           <span>经验效率: {{ plantPlan.recommended?.expPerHour || 0 }} exp/h</span>
+          <span>单次经验: {{ plantPlan.recommended?.expPerHarvest || 0 }} exp</span>
           <span>生长周期: {{ plantPlan.recommended?.growTimeWithFert || 0 }}秒(施肥后)</span>
         </div>
         <div class="plan-mode">
           <el-radio-group v-model="plantMode" size="small" @change="handlePlantModeChange">
-            <el-radio value="auto">自动最优</el-radio>
+            <el-radio value="fast">快速升级</el-radio>
+            <el-radio value="advanced">高级作物</el-radio>
             <el-radio value="manual">手动选择</el-radio>
           </el-radio-group>
           <el-select v-if="plantMode === 'manual'" v-model="plantSeedId" size="small"
             class="plant-select" @change="handlePlantSeedChange">
             <el-option v-for="opt in plantPlan.options" :key="opt.seedId"
-              :label="`${opt.name} (${opt.expPerHour} exp/h)`" :value="opt.seedId" />
+              :label="`${opt.name} (${opt.expPerHarvest}exp, ${opt.expPerHour}exp/h)`" :value="opt.seedId" />
           </el-select>
         </div>
       </div>
@@ -123,10 +127,28 @@ const { recentLogs, loadLogs } = useLog()
 const code = ref('')
 const platform = ref('qq')
 const plantPlan = ref<PlantPlanResult | null>(null)
-const plantMode = ref('auto')
+const plantMode = ref('fast')
 const plantSeedId = ref(0)
 
 const recent = recentLogs(5)
+
+const strategyLabel = computed(() => {
+  switch (plantMode.value) {
+    case 'fast': return '经验效率最优'
+    case 'advanced': return '高级作物优先'
+    case 'manual': return '手动选择'
+    default: return ''
+  }
+})
+
+const strategyTagType = computed(() => {
+  switch (plantMode.value) {
+    case 'fast': return 'success'
+    case 'advanced': return 'warning'
+    case 'manual': return 'info'
+    default: return 'info'
+  }
+})
 
 const expDisplay = computed(() => {
   if (!status.connected) return '--'
@@ -179,8 +201,9 @@ async function loadPlantPlan() {
 }
 
 async function handlePlantModeChange(mode: string) {
-  await saveConfig({ plantMode: mode as 'auto' | 'manual', plantSeedId: 0 })
+  await saveConfig({ plantMode: mode as 'fast' | 'advanced' | 'manual', plantSeedId: 0 })
   plantSeedId.value = 0
+  await loadPlantPlan()
 }
 
 async function handlePlantSeedChange(seedId: number) {
@@ -190,7 +213,7 @@ async function handlePlantSeedChange(seedId: number) {
 onMounted(async () => {
   const config = await getConfig()
   platform.value = config.platform || 'qq'
-  plantMode.value = config.plantMode || 'auto'
+  plantMode.value = config.plantMode || 'fast'
   plantSeedId.value = config.plantSeedId || 0
   if (status.connected) {
     loadPlantPlan()
@@ -319,7 +342,11 @@ watch(() => status.connected, (val) => {
 }
 
 .plant-select {
-  width: 220px;
+  width: 260px;
+}
+
+.strategy-tag {
+  margin-left: 8px;
 }
 
 .plan-empty {

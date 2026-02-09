@@ -32,10 +32,11 @@ function parseGrowTime(growPhases) {
 /**
  * 计算所有可购买作物的种植效率
  * @param {number} userLevel - 用户当前等级
- * @param {Array} shopGoodsList - 商店种子列表（可选，来自实时商店API）
- * @returns {object} { recommended, options }
+ * @param {Array} shopGoodsList - 商店种子列表（可选，来自实时商店API缓存）
+ * @param {string} strategy - 策略: 'fast'(exp/hour) | 'advanced'(单次经验)
+ * @returns {object} { currentLevel, recommended, options, strategy }
  */
-function calculatePlantPlan(userLevel, shopGoodsList) {
+function calculatePlantPlan(userLevel, shopGoodsList, strategy = 'fast') {
   const plants = loadPlantConfig();
 
   // 筛选正常植物（id 以 102 开头的是正常版本）
@@ -49,7 +50,7 @@ function calculatePlantPlan(userLevel, shopGoodsList) {
 
     // 如果有商店数据，检查是否可购买
     if (shopGoodsList && shopGoodsList.length > 0) {
-      const inShop = shopGoodsList.find(g => g.seedId === plant.seed_id && g.unlocked);
+      const inShop = shopGoodsList.find(g => g.seedId === plant.seed_id);
       if (!inShop) continue;
     } else {
       // 没有商店数据时，根据 land_level_need 粗略过滤
@@ -72,8 +73,15 @@ function calculatePlantPlan(userLevel, shopGoodsList) {
     });
   }
 
-  // 按经验效率降序排序
-  options.sort((a, b) => b.expPerHour - a.expPerHour);
+  // 根据策略排序
+  if (strategy === 'advanced') {
+    options.sort((a, b) => {
+      if (a.expPerHarvest !== b.expPerHarvest) return b.expPerHarvest - a.expPerHarvest;
+      return b.expPerHour - a.expPerHour;
+    });
+  } else {
+    options.sort((a, b) => b.expPerHour - a.expPerHour);
+  }
 
   // 设置排名
   options.forEach((opt, i) => { opt.rank = i + 1; });
@@ -82,6 +90,7 @@ function calculatePlantPlan(userLevel, shopGoodsList) {
     currentLevel: userLevel,
     recommended: options.length > 0 ? options[0] : null,
     options,
+    strategy,
   };
 }
 
