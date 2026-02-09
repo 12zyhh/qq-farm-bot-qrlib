@@ -45,15 +45,25 @@
         <div class="feature-group">
           <div class="group-title">自己农场</div>
           <div class="feature-item" v-for="f in farmFeatures" :key="f.key">
-            <span>{{ f.label }}</span>
+            <div class="feature-label">
+              <span>{{ f.label }}</span>
+              <el-tooltip v-if="f.desc" :content="f.desc" placement="top">
+                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
             <el-switch :model-value="status.features[f.key] !== false" size="small"
               @change="(v: boolean) => toggleFeature(f.key, v)" />
           </div>
         </div>
         <div class="feature-group">
           <div class="group-title">好友农场</div>
-          <div class="feature-item" v-for="f in friendFeatures" :key="f.key">
-            <span>{{ f.label }}</span>
+          <div class="feature-item" v-for="f in friendFeatures" :key="f.key" :class="{ 'indent': f.indent }">
+            <div class="feature-label">
+              <span :class="{ 'master-label': f.isMaster }">{{ f.label }}</span>
+              <el-tooltip v-if="f.desc" :content="f.desc" placement="top">
+                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
             <el-switch :model-value="status.features[f.key] !== false" size="small"
               @change="(v: boolean) => toggleFeature(f.key, v)" />
           </div>
@@ -61,7 +71,12 @@
         <div class="feature-group">
           <div class="group-title">系统</div>
           <div class="feature-item" v-for="f in systemFeatures" :key="f.key">
-            <span>{{ f.label }}</span>
+            <div class="feature-label">
+              <span>{{ f.label }}</span>
+              <el-tooltip v-if="f.desc" :content="f.desc" placement="top">
+                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
             <el-switch :model-value="status.features[f.key] !== false" size="small"
               @change="(v: boolean) => toggleFeature(f.key, v)" />
           </div>
@@ -117,6 +132,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { QuestionFilled } from '@element-plus/icons-vue'
 import { useBot } from '@/composables/useBot'
 import { useLog } from '@/composables/useLog'
 import type { PlantPlanResult } from '@/types'
@@ -158,20 +174,20 @@ const expDisplay = computed(() => {
 })
 
 const farmFeatures = [
-  { key: 'autoHarvest', label: '自动收获' },
-  { key: 'autoPlant', label: '自动种植' },
-  { key: 'autoFertilize', label: '自动施肥' },
-  { key: 'autoWeed', label: '自动除草' },
-  { key: 'autoBug', label: '自动除虫' },
-  { key: 'autoWater', label: '自动浇水' },
+  { key: 'autoHarvest', label: '自动收获', desc: '检测成熟作物并自动收获' },
+  { key: 'autoPlant', label: '自动种植', desc: '收获/铲除后自动购买种子并种植' },
+  { key: 'autoFertilize', label: '自动施肥', desc: '种植后自动施放普通肥料加速生长' },
+  { key: 'autoWeed', label: '自动除草', desc: '检测并清除杂草' },
+  { key: 'autoBug', label: '自动除虫', desc: '检测并消灭害虫' },
+  { key: 'autoWater', label: '自动浇水', desc: '检测缺水作物并浇水' },
 ]
 const friendFeatures = [
-  { key: 'friendPatrol', label: '好友巡查' },
-  { key: 'autoSteal', label: '自动偷菜' },
-  { key: 'friendHelp', label: '帮忙操作' },
+  { key: 'friendPatrol', label: '好友巡查', desc: '遍历好友列表进入农场（主开关）', isMaster: true },
+  { key: 'autoSteal', label: '自动偷菜', desc: '偷取好友成熟作物（有经验）', indent: true },
+  { key: 'friendHelp', label: '帮忙操作', desc: '帮好友除草/除虫/浇水（有经验上限）', indent: true },
 ]
 const systemFeatures = [
-  { key: 'autoTask', label: '自动任务' },
+  { key: 'autoTask', label: '自动任务', desc: '自动领取完成的任务奖励' },
 ]
 
 async function handleConnect() {
@@ -325,6 +341,26 @@ watch(() => status.connected, (val) => {
   justify-content: space-between;
   padding: 4px 0;
   font-size: 13px;
+}
+
+.feature-item.indent {
+  padding-left: 16px;
+}
+
+.feature-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.master-label {
+  font-weight: 600;
+}
+
+.help-icon {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: help;
 }
 
 .plant-plan .plan-info {
