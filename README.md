@@ -4,11 +4,9 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Electron](https://img.shields.io/badge/electron-latest-47848F.svg)](https://www.electronjs.org/)
 [![Vue](https://img.shields.io/badge/vue-3.x-4FC08D.svg)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/typescript-5.x-3178C6.svg)](https://www.typescriptlang.org/)
 
-**基于 Electron + Vue 3 的 QQ/微信经典农场小程序自动化桌面应用**
+**基于 NodeJS + Vue 3 的 QQ/微信经典农场小程序自动化脚本**
 
 通过分析小程序 WebSocket 通信协议（Protocol Buffers），实现全自动农场管理
 
@@ -21,7 +19,7 @@
 ---
 
 > **💡 项目说明**
-> 本项目基于 [linguo2625469/qq-farm-bot](https://github.com/linguo2625469/qq-farm-bot) 进行重构和功能增强，从 CLI 脚本升级为 Electron 桌面应用，新增 Vue 3 可视化界面、多种植策略、实时状态更新等功能。
+> 本项目基于 [QianChenJun/qq-farm-bot](https://github.com/QianChenJun/qq-farm-bot) 进行重构和功能增强，从 Electron 桌面应用 升级为 NodeJS 脚本，使其能在服务器和Docker环境下运行。
 
 ## 📸 应用截图
 
@@ -103,7 +101,7 @@
 ### 克隆仓库
 
 ```bash
-git clone https://github.com/QianChenJun/qq-farm-bot.git
+git clone https://github.com/MoeGrid/qq-farm-bot.git
 cd qq-farm-bot
 npm install
 ```
@@ -127,47 +125,20 @@ npm install
 
 ## 🚀 使用方式
 
-### 方式一：Electron 桌面应用（推荐）
-
 ```bash
-# 开发模式
-npm run electron:dev
+# 打包web页面
+npm run build
 
-# 打包为安装程序
-npm run electron:build
+# 启动后台服务
+npm run serve
 ```
 
-打包后在 `release/` 目录生成 `QQ经典农场助手 Setup x.x.x.exe`，安装后即可使用。
-
-**桌面应用提供：**
+**Web界面提供：**
 - 🎨 可视化操作界面（暗色主题）
 - 🎛️ 功能开关实时切换（带详细说明）
 - 🌱 种植策略配置（快速升级 / 高级作物 / 手动选择）
 - ⏱️ 巡查间隔调整
 - 📋 实时日志查看与筛选
-- 🔔 最小化到系统托盘
-
-### 方式二：CLI 命令行
-
-```bash
-# QQ 小程序登录
-npm run cli -- --code <你的code>
-
-# 微信小程序登录
-npm run cli -- --code <你的code> --wx
-
-# 自定义巡查间隔
-npm run cli -- --code <你的code> --interval 30 --friend-interval 5
-```
-
-**参数说明：**
-
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `--code` | 小程序登录凭证（必需） | - |
-| `--wx` | 使用微信登录 | QQ |
-| `--interval` | 自己农场巡查间隔（秒） | 1 |
-| `--friend-interval` | 好友农场巡查间隔（秒） | 1 |
 
 ## 📁 项目结构
 
@@ -176,8 +147,8 @@ npm run cli -- --code <你的code> --interval 30 --friend-interval 5
 
 ```
 qq-farm-bot/
-├── electron/          # Electron 主进程模块
-├── renderer/          # Vue 3 前端界面
+├── server/            # NodeJS 后端服务
+├── web/               # Vue 3 前端界面
 ├── src/               # 核心业务模块（CLI & Electron 共用）
 ├── proto/             # Protobuf 协议定义
 ├── gameConfig/        # 游戏配置数据
@@ -188,9 +159,9 @@ qq-farm-bot/
 
 ## ⚙️ 配置说明
 
-### Electron 桌面应用
+### Web应用
 
-配置通过界面操作，自动保存到用户数据目录（`%APPDATA%/qq-farm-bot/config.json`）：
+配置通过界面操作，自动保存到当前目录（`config.json`）：
 
 - **平台选择**：QQ / 微信
 - **种植模式**：
@@ -199,10 +170,6 @@ qq-farm-bot/
   - 🎯 手动选择（自定义种植作物）
 - **巡查间隔**：自己农场 / 好友农场分别设置
 - **功能开关**：每个自动化功能可独立开启/关闭，带详细说明
-
-### CLI 命令行
-
-通过启动参数配置，详见上方参数说明表。
 
 ### 邀请码（仅微信）
 
@@ -228,16 +195,8 @@ qq-farm-bot/
 <br />Node.js
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/electron/electron-original.svg" width="48" height="48" alt="Electron" />
-<br />Electron
-</td>
-<td align="center" width="20%">
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" width="48" height="48" alt="Vue 3" />
 <br />Vue 3
-</td>
-<td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="48" height="48" alt="TypeScript" />
-<br />TypeScript
 </td>
 <td align="center" width="20%">
 <img src="https://element-plus.org/images/element-plus-logo.svg" width="48" height="48" alt="Element Plus" />
@@ -247,10 +206,9 @@ qq-farm-bot/
 </table>
 
 - **运行时**：Node.js >= 16.0.0
-- **桌面框架**：Electron
-- **前端框架**：Vue 3 (Composition API) + TypeScript
+- **前端框架**：Vue 3 (Composition API)
 - **UI 组件库**：Element Plus (暗色主题)
-- **构建工具**：Vite + electron-builder
+- **构建工具**：Vite
 - **通信协议**：WebSocket + Protocol Buffers
 
 ## 🤝 贡献
@@ -263,7 +221,7 @@ qq-farm-bot/
 
 ## 🙏 致谢
 
-本项目基于 [linguo2625469/qq-farm-bot](https://github.com/linguo2625469/qq-farm-bot) 进行重构和功能增强，感谢原作者的开源贡献。
+本项目基于 [QianChenJun/qq-farm-bot](https://github.com/QianChenJun/qq-farm-bot) 进行重构和功能增强，感谢原作者的开源贡献。
 
 ---
 
@@ -271,7 +229,7 @@ qq-farm-bot/
 
 ### 📊 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=QianChenJun/qq-farm-bot&type=Date)](https://star-history.com/#QianChenJun/qq-farm-bot&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=MoeGrid/qq-farm-bot&type=Date)](https://star-history.com/#MoeGrid/qq-farm-bot&Date)
 
 **如果觉得项目不错，请点个 ⭐️ Star 支持一下！**
 

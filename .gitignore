@@ -28,3 +28,6 @@ Thumbs.db
 
 # Internal docs
 TODO.md
+
+# Config
+/config.json

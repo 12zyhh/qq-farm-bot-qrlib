@@ -26,13 +26,13 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, reactive, computed, watch, nextTick, onMounted } from 'vue'
 import { useLog } from '@/composables/useLog'
 
 const { logs, loadLogs, clearLogs } = useLog()
 
-const logListRef = ref<HTMLElement | null>(null)
+const logListRef = ref(null)
 const autoScroll = ref(true)
 
 const filters = reactive({
@@ -51,11 +51,11 @@ const allChecked = computed({
 const displayLogs = computed(() => {
   const allOn = Object.values(filters).every(Boolean)
   if (allOn) return logs
-  return logs.filter(l => filters[l.category as keyof typeof filters])
+  return logs.filter(l => filters[l.category])
 })
 
-function handleAllChange(val: boolean) {
-  const v = val as boolean
+function handleAllChange(val) {
+  const v = val
   filters.farm = v
   filters.friend = v
   filters.task = v

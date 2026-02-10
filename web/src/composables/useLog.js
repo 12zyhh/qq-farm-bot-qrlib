@@ -1,12 +1,12 @@
 import { reactive, computed } from 'vue'
-import type { LogEntry } from '@/types'
 
 const MAX_LOGS = 1000
-const logs = reactive<LogEntry[]>([])
+const logs = reactive([])
 
 async function loadLogs() {
   const data = await window.electronAPI.invoke('bot:get-logs')
-  logs.splice(0, logs.length, ...data)
+  logs.length = 0;
+  logs.push(...data)
 }
 
 async function clearLogs() {
@@ -14,20 +14,20 @@ async function clearLogs() {
   logs.splice(0, logs.length)
 }
 
-function filteredLogs(categories: Set<string>) {
+function filteredLogs(categories) {
   return computed(() => {
     if (categories.size === 0) return logs
     return logs.filter(l => categories.has(l.category))
   })
 }
 
-function recentLogs(count: number) {
+function recentLogs(count) {
   return computed(() => logs.slice(-count))
 }
 
 // Listen for log pushes from main process
 if (window.electronAPI) {
-  window.electronAPI.on('bot:log', (entry: LogEntry) => {
+  window.electronAPI.on('bot:log', (entry) => {
     logs.push(entry)
     if (logs.length > MAX_LOGS) logs.shift()
   })

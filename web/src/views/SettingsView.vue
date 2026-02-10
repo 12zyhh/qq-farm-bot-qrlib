@@ -45,20 +45,19 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useBot } from '@/composables/useBot'
-import type { PlantPlanResult } from '@/types'
 
 const { status, getConfig, saveConfig, getPlantPlan } = useBot()
 
 const farmInterval = ref(10)
 const friendInterval = ref(1)
 const saving = ref(false)
-const plantPlan = ref<PlantPlanResult | null>(null)
+const plantPlan = ref(null)
 
-function rowClassName({ row }: { row: { rank: number } }) {
+function rowClassName({ row }) {
   return row.rank === 1 ? 'recommend-row' : ''
 }
 

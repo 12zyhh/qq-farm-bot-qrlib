@@ -23,7 +23,7 @@
     <!-- 登录区 -->
     <div class="section login-section" v-if="!status.connected">
       <div class="login-row">
-        <el-input v-model="code" placeholder="请输入 code" class="login-input" />
+        <el-input v-model="code" placeholder="请输入 code" class="login-input"/>
         <el-button type="primary" :loading="connecting" @click="handleConnect">连接</el-button>
       </div>
       <div class="platform-row">
@@ -48,11 +48,13 @@
             <div class="feature-label">
               <span>{{ f.label }}</span>
               <el-tooltip v-if="f.desc" :content="f.desc" placement="top">
-                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                <el-icon class="help-icon">
+                  <QuestionFilled/>
+                </el-icon>
               </el-tooltip>
             </div>
             <el-switch :model-value="status.features[f.key] !== false" size="small"
-              @change="(v: boolean) => toggleFeature(f.key, v)" />
+                       @change="(v) => toggleFeature(f.key, v)"/>
           </div>
         </div>
         <div class="feature-group">
@@ -61,11 +63,13 @@
             <div class="feature-label">
               <span :class="{ 'master-label': f.isMaster }">{{ f.label }}</span>
               <el-tooltip v-if="f.desc" :content="f.desc" placement="top">
-                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                <el-icon class="help-icon">
+                  <QuestionFilled/>
+                </el-icon>
               </el-tooltip>
             </div>
             <el-switch :model-value="status.features[f.key] !== false" size="small"
-              @change="(v: boolean) => toggleFeature(f.key, v)" />
+                       @change="(v) => toggleFeature(f.key, v)"/>
           </div>
         </div>
         <div class="feature-group">
@@ -74,11 +78,13 @@
             <div class="feature-label">
               <span>{{ f.label }}</span>
               <el-tooltip v-if="f.desc" :content="f.desc" placement="top">
-                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                <el-icon class="help-icon">
+                  <QuestionFilled/>
+                </el-icon>
               </el-tooltip>
             </div>
             <el-switch :model-value="status.features[f.key] !== false" size="small"
-              @change="(v: boolean) => toggleFeature(f.key, v)" />
+                       @change="(v) => toggleFeature(f.key, v)"/>
           </div>
         </div>
       </div>
@@ -103,9 +109,9 @@
             <el-radio value="manual">手动选择</el-radio>
           </el-radio-group>
           <el-select v-if="plantMode === 'manual'" v-model="plantSeedId" size="small"
-            class="plant-select" @change="handlePlantSeedChange">
+                     class="plant-select" @change="handlePlantSeedChange">
             <el-option v-for="opt in plantPlan.options" :key="opt.seedId"
-              :label="`${opt.name} (${opt.expPerHarvest}exp, ${opt.expPerHour}exp/h)`" :value="opt.seedId" />
+                       :label="`${opt.name} (${opt.expPerHarvest}exp, ${opt.expPerHour}exp/h)`" :value="opt.seedId"/>
           </el-select>
         </div>
       </div>
@@ -129,20 +135,19 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { QuestionFilled } from '@element-plus/icons-vue'
-import { useBot } from '@/composables/useBot'
-import { useLog } from '@/composables/useLog'
-import type { PlantPlanResult } from '@/types'
+<script setup>
+import {ref, computed, onMounted, watch} from 'vue'
+import {ElMessage} from 'element-plus'
+import {QuestionFilled} from '@element-plus/icons-vue'
+import {useBot} from '@/composables/useBot'
+import {useLog} from '@/composables/useLog'
 
-const { status, connecting, connect, disconnect, toggleFeature, getConfig, saveConfig, getPlantPlan } = useBot()
-const { recentLogs, loadLogs } = useLog()
+const {status, connecting, connect, disconnect, toggleFeature, getConfig, saveConfig, getPlantPlan, refreshStatus} = useBot()
+const {recentLogs, loadLogs} = useLog()
 
 const code = ref('')
 const platform = ref('qq')
-const plantPlan = ref<PlantPlanResult | null>(null)
+const plantPlan = ref(null)
 const plantMode = ref('fast')
 const plantSeedId = ref(0)
 
@@ -150,19 +155,27 @@ const recent = recentLogs(5)
 
 const strategyLabel = computed(() => {
   switch (plantMode.value) {
-    case 'fast': return '经验效率最优'
-    case 'advanced': return '高级作物优先'
-    case 'manual': return '手动选择'
-    default: return ''
+    case 'fast':
+      return '经验效率最优'
+    case 'advanced':
+      return '高级作物优先'
+    case 'manual':
+      return '手动选择'
+    default:
+      return ''
   }
 })
 
 const strategyTagType = computed(() => {
   switch (plantMode.value) {
-    case 'fast': return 'success'
-    case 'advanced': return 'warning'
-    case 'manual': return 'info'
-    default: return 'info'
+    case 'fast':
+      return 'success'
+    case 'advanced':
+      return 'warning'
+    case 'manual':
+      return 'info'
+    default:
+      return 'info'
   }
 })
 
@@ -174,20 +187,20 @@ const expDisplay = computed(() => {
 })
 
 const farmFeatures = [
-  { key: 'autoHarvest', label: '自动收获', desc: '检测成熟作物并自动收获' },
-  { key: 'autoPlant', label: '自动种植', desc: '收获/铲除后自动购买种子并种植' },
-  { key: 'autoFertilize', label: '自动施肥', desc: '种植后自动施放普通肥料加速生长' },
-  { key: 'autoWeed', label: '自动除草', desc: '检测并清除杂草' },
-  { key: 'autoBug', label: '自动除虫', desc: '检测并消灭害虫' },
-  { key: 'autoWater', label: '自动浇水', desc: '检测缺水作物并浇水' },
+  {key: 'autoHarvest', label: '自动收获', desc: '检测成熟作物并自动收获'},
+  {key: 'autoPlant', label: '自动种植', desc: '收获/铲除后自动购买种子并种植'},
+  {key: 'autoFertilize', label: '自动施肥', desc: '种植后自动施放普通肥料加速生长'},
+  {key: 'autoWeed', label: '自动除草', desc: '检测并清除杂草'},
+  {key: 'autoBug', label: '自动除虫', desc: '检测并消灭害虫'},
+  {key: 'autoWater', label: '自动浇水', desc: '检测缺水作物并浇水'},
 ]
 const friendFeatures = [
-  { key: 'friendPatrol', label: '好友巡查', desc: '遍历好友列表进入农场（主开关）', isMaster: true },
-  { key: 'autoSteal', label: '自动偷菜', desc: '偷取好友成熟作物（有经验）', indent: true },
-  { key: 'friendHelp', label: '帮忙操作', desc: '帮好友除草/除虫/浇水（有经验上限）', indent: true },
+  {key: 'friendPatrol', label: '好友巡查', desc: '遍历好友列表进入农场（主开关）', isMaster: true},
+  {key: 'autoSteal', label: '自动偷菜', desc: '偷取好友成熟作物（有经验）', indent: true},
+  {key: 'friendHelp', label: '帮忙操作', desc: '帮好友除草/除虫/浇水（有经验上限）', indent: true},
 ]
 const systemFeatures = [
-  { key: 'autoTask', label: '自动任务', desc: '自动领取完成的任务奖励' },
+  {key: 'autoTask', label: '自动任务', desc: '自动领取完成的任务奖励'},
 ]
 
 async function handleConnect() {
@@ -213,17 +226,18 @@ async function handleDisconnect() {
 async function loadPlantPlan() {
   try {
     plantPlan.value = await getPlantPlan()
-  } catch { /* ignore */ }
+  } catch { /* ignore */
+  }
 }
 
-async function handlePlantModeChange(mode: string) {
-  await saveConfig({ plantMode: mode as 'fast' | 'advanced' | 'manual', plantSeedId: 0 })
+async function handlePlantModeChange(mode) {
+  await saveConfig({plantMode: mode, plantSeedId: 0})
   plantSeedId.value = 0
   await loadPlantPlan()
 }
 
-async function handlePlantSeedChange(seedId: number) {
-  await saveConfig({ plantMode: 'manual', plantSeedId: seedId })
+async function handlePlantSeedChange(seedId) {
+  await saveConfig({plantMode: 'manual', plantSeedId: seedId})
 }
 
 onMounted(async () => {
@@ -231,6 +245,7 @@ onMounted(async () => {
   platform.value = config.platform || 'qq'
   plantMode.value = config.plantMode || 'fast'
   plantSeedId.value = config.plantSeedId || 0
+  await refreshStatus();
   if (status.connected) {
     loadPlantPlan()
     loadLogs()

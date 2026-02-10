@@ -3,10 +3,12 @@
     <!-- 自定义标题栏 -->
     <div class="titlebar">
       <span class="titlebar-title">QQ经典农场助手</span>
+      <!--
       <div class="titlebar-buttons">
         <button class="titlebar-btn" @click="minimize">─</button>
         <button class="titlebar-btn close" @click="close">✕</button>
       </div>
+      -->
     </div>
 
     <!-- 主体区域 -->
@@ -38,7 +40,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -49,24 +51,16 @@ const connected = ref(false)
 
 const navItems = [
   { path: '/', icon: '🏠', label: '首页' },
-  { path: '/settings', icon: '⚙', label: '设置' },
+  { path: '/settings', icon: '⚙️', label: '设置' },
   { path: '/logs', icon: '📋', label: '日志' },
 ]
 
 const statusClass = computed(() => (connected.value ? 'online' : 'offline'))
 const statusText = computed(() => (connected.value ? '在线' : '离线'))
 
-function minimize() {
-  window.electronAPI?.invoke('window:minimize')
-}
-
-function close() {
-  window.electronAPI?.invoke('window:close')
-}
-
 // 监听状态更新
 if (window.electronAPI) {
-  window.electronAPI.on('bot:status-update', (data: any) => {
+  window.electronAPI.on('bot:status-update', (data) => {
     if (data && typeof data.connected === 'boolean') {
       connected.value = data.connected
     }

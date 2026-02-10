@@ -5,7 +5,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { app } = require('electron');
 
 const CONFIG_FILE = 'config.json';
 
@@ -32,7 +31,7 @@ const DEFAULT_CONFIG = {
 let config = null;
 
 function getConfigPath() {
-  return path.join(app.getPath('userData'), CONFIG_FILE);
+  return path.join(process.cwd(), CONFIG_FILE);
 }
 
 function load() {
