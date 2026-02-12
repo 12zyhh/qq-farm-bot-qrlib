@@ -156,6 +156,7 @@
               </el-radio>
             </el-radio-group>
           </div>
+          <span style="color: red;">FIXME：存在Bug，年后在修 vx not showQRSection </span>
           <div class="qr-section" v-if="showQRSection">
             <el-button 
               type="success" 
