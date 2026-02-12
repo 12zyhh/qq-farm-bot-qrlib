@@ -1,6 +1,6 @@
 # QQ 农场助手
 
-本项目基于[MoeGrid](https://github.com/MoeGrid/qq-farm-bot) 二开，集成扫码登录获取Code，不再依靠抓包，同时重构UI
+本项目基于[MoeGrid/qq-farm-bot](https://github.com/MoeGrid/qq-farm-bot) 二开，集成扫码登录获取Code，不再依靠抓包，同时重构UI
 感谢[MoeGrid](https://github.com/MoeGrid) 建议！
 
 ## 截图
